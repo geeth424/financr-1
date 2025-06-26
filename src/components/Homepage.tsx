@@ -4,7 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, TrendingUp, FileText, Home, Users, Calendar, Shield } from 'lucide-react';
 
-const Homepage = () => {
+interface HomepageProps {
+  onGetStarted: () => void;
+}
+
+const Homepage = ({ onGetStarted }: HomepageProps) => {
   const features = [
     {
       icon: <TrendingUp className="w-8 h-8 text-blue-600" />,
@@ -50,10 +54,10 @@ const Homepage = () => {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
+              <Button variant="ghost" className="text-gray-600 hover:text-gray-900" onClick={onGetStarted}>
                 Sign In
               </Button>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={onGetStarted}>
                 Start Free
               </Button>
             </div>
@@ -75,7 +79,7 @@ const Homepage = () => {
             expenses, invoicing, and tax preparation with confidence.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg">
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg" onClick={onGetStarted}>
               Start for Free
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
@@ -127,7 +131,7 @@ const Homepage = () => {
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
             Join thousands of professionals who trust Financr to manage their financial operations.
           </p>
-          <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-3 text-lg font-semibold">
+          <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-3 text-lg font-semibold" onClick={onGetStarted}>
             Start Your Free Trial
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
