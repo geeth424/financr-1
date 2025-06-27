@@ -14,6 +14,20 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Configure Supabase client for proper session handling
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session);
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        checkUserProfile(session.user.id);
+      } else {
+        setCurrentView('homepage');
+      }
+      setLoading(false);
+    });
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -24,7 +38,9 @@ const Index = () => {
         // Handle navigation based on auth state
         if (session?.user) {
           // Check if user needs onboarding
-          checkUserProfile(session.user.id);
+          setTimeout(() => {
+            checkUserProfile(session.user.id);
+          }, 0);
         } else {
           setCurrentView('homepage');
         }
@@ -32,22 +48,12 @@ const Index = () => {
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        checkUserProfile(session.user.id);
-      }
-      setLoading(false);
-    });
-
     return () => subscription.unsubscribe();
   }, []);
 
   const checkUserProfile = async (userId: string) => {
     try {
+      console.log('Checking user profile for:', userId);
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -56,13 +62,16 @@ const Index = () => {
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
+        setCurrentView('onboarding');
         return;
       }
 
       // If no profile exists or profile is incomplete, show onboarding
-      if (!profile || !profile.business_name || !profile.business_type) {
+      if (!profile || !profile.business_name) {
+        console.log('Profile incomplete, showing onboarding');
         setCurrentView('onboarding');
       } else {
+        console.log('Profile complete, showing dashboard');
         setCurrentView('dashboard');
       }
     } catch (error) {
@@ -72,7 +81,7 @@ const Index = () => {
   };
 
   const handleAuthSuccess = () => {
-    // This will be handled by the auth state change listener
+    console.log('Auth success - will be handled by auth state change listener');
   };
 
   const handleOnboardingComplete = () => {
@@ -80,8 +89,30 @@ const Index = () => {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setCurrentView('homepage');
+    try {
+      console.log('Signing out...');
+      
+      // Clear any cached data
+      setUser(null);
+      setSession(null);
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      
+      if (error) {
+        console.error('Error signing out:', error);
+      }
+      
+      // Force navigation to homepage
+      setCurrentView('homepage');
+      
+      // Optionally reload the page for a clean state
+      // window.location.href = '/';
+    } catch (error) {
+      console.error('Unexpected error during sign out:', error);
+      // Force navigation even if there's an error
+      setCurrentView('homepage');
+    }
   };
 
   if (loading) {
@@ -169,6 +200,13 @@ const Index = () => {
                 </button>
               )}
             </div>
+            {user && (
+              <div className="mt-2 pt-2 border-t border-gray-200">
+                <p className="text-xs text-gray-600">
+                  Logged in as: {user.email}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
