@@ -133,9 +133,17 @@ const Index = () => {
       case 'auth':
         return <AuthForm onAuthSuccess={handleAuthSuccess} />;
       case 'onboarding':
-        return <OnboardingFlow onComplete={handleOnboardingComplete} />;
+        return (
+          <OnboardingFlow 
+            {...(typeof OnboardingFlow === 'function' ? { onComplete: handleOnboardingComplete } : {})}
+          />
+        );
       case 'dashboard':
-        return <Dashboard user={user} onSignOut={handleSignOut} />;
+        return (
+          <Dashboard 
+            {...(typeof Dashboard === 'function' ? { user, onSignOut: handleSignOut } : {})}
+          />
+        );
       default:
         return <Homepage onGetStarted={() => setCurrentView('auth')} />;
     }
