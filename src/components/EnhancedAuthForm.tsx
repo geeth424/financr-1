@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 interface EnhancedAuthFormProps {
-  onAuthSuccess: () => void;
+  onAuthSuccess: (isSignUp?: boolean) => void;
   onBack?: () => void;
 }
 
@@ -52,6 +51,7 @@ const EnhancedAuthForm = ({ onAuthSuccess, onBack }: EnhancedAuthFormProps) => {
           title: "Account created!",
           description: "Please check your email to verify your account.",
         });
+        onAuthSuccess(true); // Pass true for sign up
       } else if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -59,7 +59,7 @@ const EnhancedAuthForm = ({ onAuthSuccess, onBack }: EnhancedAuthFormProps) => {
         });
         
         if (error) throw error;
-        onAuthSuccess();
+        onAuthSuccess(false); // Pass false for sign in
       } else if (mode === 'forgot') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/auth`

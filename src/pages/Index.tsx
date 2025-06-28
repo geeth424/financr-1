@@ -16,7 +16,7 @@ const Index = () => {
     handleSignOut,
   } = useAuthState();
 
-  const [navigationView, setNavigationView] = React.useState<'homepage' | 'auth' | 'onboarding' | 'dashboard' | 'pricing' | 'help' | 'privacy' | 'terms'>('homepage');
+  const [navigationView, setNavigationView] = React.useState<'homepage' | 'auth' | 'onboarding' | 'dashboard' | 'pricing' | 'help' | 'privacy' | 'terms' | 'security'>('homepage');
 
   // Use the auth state view if user is authenticated, otherwise use navigation view
   const activeView = user ? currentView : navigationView;
@@ -24,6 +24,16 @@ const Index = () => {
   if (loading) {
     return <LoadingSpinner />;
   }
+
+  const handleAuthSuccessWithFlow = (isSignUp?: boolean) => {
+    if (isSignUp) {
+      // Sign up flow - go to onboarding
+      handleAuthSuccess();
+    } else {
+      // Sign in flow - go directly to dashboard
+      setCurrentView('dashboard');
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -36,12 +46,13 @@ const Index = () => {
             setNavigationView('auth');
           }
         }}
-        onAuthSuccess={handleAuthSuccess}
+        onAuthSuccess={handleAuthSuccessWithFlow}
         onOnboardingComplete={handleOnboardingComplete}
         onViewPricing={() => setNavigationView('pricing')}
         onViewHelp={() => setNavigationView('help')}
         onViewPrivacy={() => setNavigationView('privacy')}
         onViewTerms={() => setNavigationView('terms')}
+        onViewSecurity={() => setNavigationView('security')}
         onBackToHome={() => setNavigationView('homepage')}
         user={user}
         onSignOut={handleSignOut}

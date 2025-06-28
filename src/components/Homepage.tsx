@@ -8,9 +8,10 @@ interface HomepageProps {
   onGetStarted: () => void;
   onViewPricing: () => void;
   onViewHelp: () => void;
+  onViewSecurity: () => void;
 }
 
-const Homepage = ({ onGetStarted, onViewPricing, onViewHelp }: HomepageProps) => {
+const Homepage = ({ onGetStarted, onViewPricing, onViewHelp, onViewSecurity }: HomepageProps) => {
   const features = [
     {
       icon: <TrendingUp className="w-8 h-8 text-blue-600" />,
@@ -44,6 +45,28 @@ const Homepage = ({ onGetStarted, onViewPricing, onViewHelp }: HomepageProps) =>
     }
   ];
 
+  const handleDownloadPrivacyPolicy = () => {
+    // Create a mock PDF download
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:application/pdf;base64,JVBERi0xLjQKJdPr6eEKMSAwIG9iago8PAovVGl0bGUgKFByaXZhY3kgUG9saWN5KQovQ3JlYXRvciAoRmluYW5jcikKL1Byb2R1Y2VyIChGaW5hbmNyKQovQ3JlYXRpb25EYXRlIChEOjIwMjUwMTAyMTIwMDAwWikKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL0NhdGFsb2cKL1BhZ2VzIDMgMCBSCj4+CmVuZG9iagozIDAgb2JqCjw8Ci9UeXBlIC9QYWdlcwovS2lkcyBbNCAwIFJdCi9Db3VudCAxCj4+CmVuZG9iago0IDAgb2JqCjw8Ci9UeXBlIC9QYWdlCi9QYXJlbnQgMyAwIFIKL01lZGlhQm94IFswIDAgNjEyIDc5Ml0KPj4KZW5kb2JqCnhyZWYKMCA1CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMTI1IDAwMDAwIG4gCjAwMDAwMDAxNzIgMDAwMDAgbiAKMDAwMDAwMDIyOSAwMDAwMCBuIAp0cmFpbGVyCjw8Ci9TaXplIDUKL1Jvb3QgMiAwIFIKPj4Kc3RhcnR4cmVmCjMxNApFT0Y=');
+    element.setAttribute('download', 'privacy-policy.pdf');
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
+  const handleDownloadTermsOfService = () => {
+    // Create a mock PDF download
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:application/pdf;base64,JVBERi0xLjQKJdPr6eEKMSAwIG9iago8PAovVGl0bGUgKFRlcm1zIG9mIFNlcnZpY2UpCi9DcmVhdG9yIChGaW5hbmNyKQovUHJvZHVjZXIgKEZpbmFuY3IpCi9DcmVhdGlvbkRhdGUgKEQ6MjAyNTAxMDIxMjAwMDBaKQo+PgplbmRvYmoKMiAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMyAwIFIKPj4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFs0IDAgUl0KL0NvdW50IDEKPT4KZW5kb2JqCjQgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAzIDAgUgovTWVkaWFCb3ggWzAgMCA2MTIgNzkyXQo+PgplbmRvYmoKeHJlZgowIDUKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAxMjUgMDAwMDAgbiAKMDAwMDAwMDE3MiAwMDAwMCBuIAowMDAwMDAwMjI5IDAwMDAwIG4gCnRyYWlsZXIKPDwKL1NpemUgNQovUm9vdCAyIDAgUgo+PgpzdGFydHhyZWYKMzE0CkVPRg==');
+    element.setAttribute('download', 'terms-of-service.pdf');
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
       {/* Navigation */}
@@ -58,6 +81,9 @@ const Homepage = ({ onGetStarted, onViewPricing, onViewHelp }: HomepageProps) =>
             <div className="flex items-center space-x-4">
               <Button variant="ghost" className="text-gray-600 hover:text-gray-900" onClick={onViewPricing}>
                 Pricing
+              </Button>
+              <Button variant="ghost" className="text-gray-600 hover:text-gray-900" onClick={onViewSecurity}>
+                Security
               </Button>
               <Button variant="ghost" className="text-gray-600 hover:text-gray-900" onClick={onViewHelp}>
                 Help
@@ -163,13 +189,12 @@ const Homepage = ({ onGetStarted, onViewPricing, onViewHelp }: HomepageProps) =>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
                 <li><button onClick={onViewPricing} className="hover:text-white transition-colors text-left">Pricing</button></li>
-                <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
+                <li><button onClick={onViewSecurity} className="hover:text-white transition-colors text-left">Security</button></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Resources</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
                 <li><button onClick={onViewHelp} className="hover:text-white transition-colors text-left">Help Center</button></li>
                 <li><button onClick={onViewHelp} className="hover:text-white transition-colors text-left">Contact</button></li>
               </ul>
@@ -177,13 +202,13 @@ const Homepage = ({ onGetStarted, onViewPricing, onViewHelp }: HomepageProps) =>
             <div>
               <h4 className="font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                <li><button onClick={handleDownloadPrivacyPolicy} className="hover:text-white transition-colors text-left">Privacy Policy</button></li>
+                <li><button onClick={handleDownloadTermsOfService} className="hover:text-white transition-colors text-left">Terms of Service</button></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Financr. All rights reserved.</p>
+            <p>&copy; 2025 Financr. All rights reserved.</p>
           </div>
         </div>
       </footer>
