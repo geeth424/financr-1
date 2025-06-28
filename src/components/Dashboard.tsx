@@ -16,7 +16,8 @@ import {
   Settings,
   Plus,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Trash2
 } from 'lucide-react';
 
 // Import the new components
@@ -26,6 +27,7 @@ import Invoices from './Invoices';
 import Expenses from './Expenses';
 import Properties from './Properties';
 import Subscriptions from './Subscriptions';
+import RecentTransactionsModal from './RecentTransactionsModal';
 
 interface DashboardProps {
   user: User | null;
@@ -34,6 +36,7 @@ interface DashboardProps {
 
 const Dashboard = ({ user, onSignOut }: DashboardProps) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [showTransactionsModal, setShowTransactionsModal] = useState(false);
 
   const stats = [
     {
@@ -66,64 +69,91 @@ const Dashboard = ({ user, onSignOut }: DashboardProps) => {
     }
   ];
 
-  const recentTransactions = [
+  const [recentTransactions, setRecentTransactions] = useState([
     {
       id: 1,
-      type: "income",
+      type: "income" as const,
       description: "Website Development - ABC Corp",
       amount: "$2,500",
       date: "Dec 24, 2024",
-      status: "completed"
+      status: "completed" as const
     },
     {
       id: 2,
-      type: "expense",
+      type: "expense" as const,
       description: "Adobe Creative Suite",
       amount: "$52.99",
       date: "Dec 23, 2024",
-      status: "completed"
+      status: "completed" as const
     },
     {
       id: 3,
-      type: "income",
+      type: "income" as const,
       description: "Rental Income - 123 Main St",
       amount: "$1,200",
       date: "Dec 22, 2024",
-      status: "completed"
+      status: "completed" as const
     },
     {
       id: 4,
-      type: "expense",
+      type: "expense" as const,
       description: "Office Supplies",
       amount: "$89.45",
       date: "Dec 21, 2024",
-      status: "pending"
-    }
-  ];
-
-  const upcomingItems = [
+      status: "pending" as const
+    },
     {
+      id: 5,
+      type: "income" as const,
+      description: "Consulting - XYZ Company",
+      amount: "$1,800",
+      date: "Dec 20, 2024",
+      status: "completed" as const
+    },
+    {
+      id: 6,
+      type: "expense" as const,
+      description: "Internet Bill",
+      amount: "$79.99",
+      date: "Dec 19, 2024",
+      status: "completed" as const
+    }
+  ]);
+
+  const [upcomingItems, setUpcomingItems] = useState([
+    {
+      id: 1,
       type: "invoice",
       description: "Invoice #INV-001 - XYZ Company",
       amount: "$1,500",
       dueDate: "Dec 30, 2024",
-      priority: "high"
+      priority: "High" as const
     },
     {
+      id: 2,
       type: "rent",
       description: "Rent Due - 456 Oak Avenue",
       amount: "$1,800",
       dueDate: "Jan 1, 2025",
-      priority: "medium"
+      priority: "Medium" as const
     },
     {
+      id: 3,
       type: "subscription",
       description: "QuickBooks Renewal",
       amount: "$30",
       dueDate: "Jan 5, 2025",
-      priority: "low"
+      priority: "Low" as const
     }
-  ];
+  ]);
+
+  const handleDeleteTransaction = (id: number) => {
+    setRecentTransactions(prev => prev.filter(transaction => transaction.id !== id));
+  };
+
+  const handleDeleteUpcomingItem = (id: number) => {
+    setUpcomingItems(prev => prev.filter(item => item.id !== id));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -221,12 +251,18 @@ const Dashboard = ({ user, onSignOut }: DashboardProps) => {
                     <CardHeader>
                       <div className="flex justify-between items-center">
                         <CardTitle>Recent Transactions</CardTitle>
-                        <Button variant="outline" size="sm">View All</Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setShowTransactionsModal(true)}
+                        >
+                          View All
+                        </Button>
                       </div>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {recentTransactions.map((transaction) => (
+                        {recentTransactions.slice(0, 4).map((transaction) => (
                           <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                             <div className="flex items-center space-x-4">
                               <div className={`p-2 rounded-full ${
@@ -242,15 +278,25 @@ const Dashboard = ({ user, onSignOut }: DashboardProps) => {
                                 <p className="text-sm text-gray-600">{transaction.date}</p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className={`font-semibold ${
-                                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                              }`}>
-                                {transaction.type === 'income' ? '+' : '-'}{transaction.amount}
-                              </p>
-                              <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
-                                {transaction.status}
-                              </Badge>
+                            <div className="flex items-center space-x-2">
+                              <div className="text-right">
+                                <p className={`font-semibold ${
+                                  transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {transaction.type === 'income' ? '+' : '-'}{transaction.amount}
+                                </p>
+                                <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
+                                  {transaction.status}
+                                </Badge>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteTransaction(transaction.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
                           </div>
                         ))}
@@ -267,16 +313,26 @@ const Dashboard = ({ user, onSignOut }: DashboardProps) => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {upcomingItems.map((item, index) => (
-                          <div key={index} className="p-4 border border-gray-200 rounded-lg">
+                        {upcomingItems.map((item) => (
+                          <div key={item.id} className="p-4 border border-gray-200 rounded-lg">
                             <div className="flex justify-between items-start mb-2">
                               <Badge variant={
-                                item.priority === 'high' ? 'destructive' : 
-                                item.priority === 'medium' ? 'default' : 'secondary'
+                                item.priority === 'High' ? 'destructive' : 
+                                item.priority === 'Medium' ? 'default' : 'secondary'
                               }>
                                 {item.priority}
                               </Badge>
-                              <p className="font-semibold text-gray-900">{item.amount}</p>
+                              <div className="flex items-center space-x-2">
+                                <p className="font-semibold text-gray-900">{item.amount}</p>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteUpcomingItem(item.id)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-6 w-6"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
                             </div>
                             <p className="text-sm font-medium text-gray-900 mb-1">{item.description}</p>
                             <p className="text-xs text-gray-600">Due {item.dueDate}</p>
@@ -315,6 +371,14 @@ const Dashboard = ({ user, onSignOut }: DashboardProps) => {
           </Tabs>
         </div>
       </div>
+
+      {/* Recent Transactions Modal */}
+      <RecentTransactionsModal
+        isOpen={showTransactionsModal}
+        onClose={() => setShowTransactionsModal(false)}
+        transactions={recentTransactions}
+        onDeleteTransaction={handleDeleteTransaction}
+      />
     </div>
   );
 };

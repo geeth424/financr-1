@@ -2,7 +2,7 @@
 import React from 'react';
 import { User } from '@supabase/supabase-js';
 import Homepage from './Homepage';
-import AuthForm from './AuthForm';
+import EnhancedAuthForm from './EnhancedAuthForm';
 import OnboardingFlow from './OnboardingFlow';
 import Dashboard from './Dashboard';
 import PricingPlans from './PricingPlans';
@@ -56,7 +56,7 @@ const ViewRenderer = ({
         />
       );
     case 'auth':
-      return <AuthForm onAuthSuccess={onAuthSuccess} />;
+      return <EnhancedAuthForm onAuthSuccess={onAuthSuccess} onBack={onBackToHome} />;
     case 'onboarding':
       return <OnboardingFlow onComplete={onOnboardingComplete} />;
     case 'dashboard':

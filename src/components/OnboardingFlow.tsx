@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,11 @@ import {
   TrendingUp
 } from 'lucide-react';
 
-const OnboardingFlow = () => {
+interface OnboardingFlowProps {
+  onComplete: () => void;
+}
+
+const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
@@ -107,6 +110,16 @@ const OnboardingFlow = () => {
         ? prev.filter(id => id !== featureId)
         : [...prev, featureId]
     );
+  };
+
+  const handleSkipForNow = () => {
+    // Skip the current step and go to dashboard
+    onComplete();
+  };
+
+  const handleGoToDashboard = () => {
+    // Complete onboarding and go to dashboard
+    onComplete();
   };
 
   const renderStep = () => {
@@ -228,7 +241,7 @@ const OnboardingFlow = () => {
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
                     Connect Stripe Account
                   </Button>
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" onClick={handleSkipForNow}>
                     Skip for Now
                   </Button>
                 </div>
@@ -288,7 +301,7 @@ const OnboardingFlow = () => {
             
             <Button 
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-              onClick={() => console.log('Navigate to dashboard')}
+              onClick={handleGoToDashboard}
             >
               Go to Dashboard
               <ArrowRight className="ml-2 w-4 h-4" />
