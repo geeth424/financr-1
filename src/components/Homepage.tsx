@@ -6,9 +6,11 @@ import { ArrowRight, TrendingUp, FileText, Home, Users, Calendar, Shield } from 
 
 interface HomepageProps {
   onGetStarted: () => void;
+  onViewPricing: () => void;
+  onViewHelp: () => void;
 }
 
-const Homepage = ({ onGetStarted }: HomepageProps) => {
+const Homepage = ({ onGetStarted, onViewPricing, onViewHelp }: HomepageProps) => {
   const features = [
     {
       icon: <TrendingUp className="w-8 h-8 text-blue-600" />,
@@ -54,10 +56,16 @@ const Homepage = ({ onGetStarted }: HomepageProps) => {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
+              <Button variant="ghost" className="text-gray-600 hover:text-gray-900" onClick={onViewPricing}>
+                Pricing
+              </Button>
+              <Button variant="ghost" className="text-gray-600 hover:text-gray-900" onClick={onViewHelp}>
+                Help
+              </Button>
               <Button variant="ghost" className="text-gray-600 hover:text-gray-900" onClick={onGetStarted}>
                 Sign In
               </Button>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={onGetStarted}>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={onViewPricing}>
                 Start Free
               </Button>
             </div>
@@ -79,7 +87,7 @@ const Homepage = ({ onGetStarted }: HomepageProps) => {
             expenses, invoicing, and tax preparation with confidence.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg" onClick={onGetStarted}>
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg" onClick={onViewPricing}>
               Start for Free
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
@@ -131,7 +139,7 @@ const Homepage = ({ onGetStarted }: HomepageProps) => {
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
             Join thousands of professionals who trust Financr to manage their financial operations.
           </p>
-          <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-3 text-lg font-semibold" onClick={onGetStarted}>
+          <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-3 text-lg font-semibold" onClick={onViewPricing}>
             Start Your Free Trial
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
@@ -154,7 +162,7 @@ const Homepage = ({ onGetStarted }: HomepageProps) => {
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
+                <li><button onClick={onViewPricing} className="hover:text-white transition-colors text-left">Pricing</button></li>
                 <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
               </ul>
             </div>
@@ -162,8 +170,8 @@ const Homepage = ({ onGetStarted }: HomepageProps) => {
               <h4 className="font-semibold mb-4">Resources</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+                <li><button onClick={onViewHelp} className="hover:text-white transition-colors text-left">Help Center</button></li>
+                <li><button onClick={onViewHelp} className="hover:text-white transition-colors text-left">Contact</button></li>
               </ul>
             </div>
             <div>

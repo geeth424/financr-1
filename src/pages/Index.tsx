@@ -16,6 +16,11 @@ const Index = () => {
     handleSignOut,
   } = useAuthState();
 
+  const [navigationView, setNavigationView] = React.useState<'homepage' | 'auth' | 'onboarding' | 'dashboard' | 'pricing' | 'help' | 'privacy' | 'terms'>('homepage');
+
+  // Use the auth state view if user is authenticated, otherwise use navigation view
+  const activeView = user ? currentView : navigationView;
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -23,10 +28,21 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       <ViewRenderer
-        currentView={currentView}
-        onGetStarted={() => setCurrentView('auth')}
+        currentView={activeView}
+        onGetStarted={() => {
+          if (user) {
+            setCurrentView('auth');
+          } else {
+            setNavigationView('auth');
+          }
+        }}
         onAuthSuccess={handleAuthSuccess}
         onOnboardingComplete={handleOnboardingComplete}
+        onViewPricing={() => setNavigationView('pricing')}
+        onViewHelp={() => setNavigationView('help')}
+        onViewPrivacy={() => setNavigationView('privacy')}
+        onViewTerms={() => setNavigationView('terms')}
+        onBackToHome={() => setNavigationView('homepage')}
         user={user}
         onSignOut={handleSignOut}
       />

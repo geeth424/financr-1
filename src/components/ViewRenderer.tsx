@@ -5,12 +5,21 @@ import Homepage from './Homepage';
 import AuthForm from './AuthForm';
 import OnboardingFlow from './OnboardingFlow';
 import Dashboard from './Dashboard';
+import PricingPlans from './PricingPlans';
+import HelpCenter from './HelpCenter';
+import PrivacyPolicy from './PrivacyPolicy';
+import TermsOfService from './TermsOfService';
 
 interface ViewRendererProps {
-  currentView: 'homepage' | 'auth' | 'onboarding' | 'dashboard';
+  currentView: 'homepage' | 'auth' | 'onboarding' | 'dashboard' | 'pricing' | 'help' | 'privacy' | 'terms';
   onGetStarted: () => void;
   onAuthSuccess: () => void;
   onOnboardingComplete: () => void;
+  onViewPricing: () => void;
+  onViewHelp: () => void;
+  onViewPrivacy: () => void;
+  onViewTerms: () => void;
+  onBackToHome: () => void;
   user: User | null;
   onSignOut: () => Promise<void>;
 }
@@ -20,20 +29,54 @@ const ViewRenderer = ({
   onGetStarted,
   onAuthSuccess,
   onOnboardingComplete,
+  onViewPricing,
+  onViewHelp,
+  onViewPrivacy,
+  onViewTerms,
+  onBackToHome,
   user,
   onSignOut,
 }: ViewRendererProps) => {
+  const handleSelectPlan = (plan: 'free' | 'premium' | 'enterprise') => {
+    if (plan === 'free') {
+      onGetStarted();
+    } else {
+      // For paid plans, could integrate with Stripe here
+      alert(`Selected ${plan} plan. Payment integration would be implemented here.`);
+    }
+  };
+
   switch (currentView) {
     case 'homepage':
-      return <Homepage onGetStarted={onGetStarted} />;
+      return (
+        <Homepage 
+          onGetStarted={onGetStarted} 
+          onViewPricing={onViewPricing}
+          onViewHelp={onViewHelp}
+        />
+      );
     case 'auth':
       return <AuthForm onAuthSuccess={onAuthSuccess} />;
     case 'onboarding':
-      return <OnboardingFlow />;
+      return <OnboardingFlow onComplete={onOnboardingComplete} />;
     case 'dashboard':
       return <Dashboard user={user} onSignOut={onSignOut} />;
+    case 'pricing':
+      return <PricingPlans onSelectPlan={handleSelectPlan} />;
+    case 'help':
+      return <HelpCenter onBack={onBackToHome} />;
+    case 'privacy':
+      return <PrivacyPolicy onBack={onBackToHome} />;
+    case 'terms':
+      return <TermsOfService onBack={onBackToHome} />;
     default:
-      return <Homepage onGetStarted={onGetStarted} />;
+      return (
+        <Homepage 
+          onGetStarted={onGetStarted} 
+          onViewPricing={onViewPricing}
+          onViewHelp={onViewHelp}
+        />
+      );
   }
 };
 
