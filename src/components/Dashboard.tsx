@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { User } from '@supabase/supabase-js';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -18,7 +19,20 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 
-const Dashboard = () => {
+// Import the new components
+import Clients from './Clients';
+import Income from './Income';
+import Invoices from './Invoices';
+import Expenses from './Expenses';
+import Properties from './Properties';
+import Subscriptions from './Subscriptions';
+
+interface DashboardProps {
+  user: User | null;
+  onSignOut: () => Promise<void>;
+}
+
+const Dashboard = ({ user, onSignOut }: DashboardProps) => {
   const [activeTab, setActiveTab] = useState("overview");
 
   const stats = [
@@ -129,115 +143,16 @@ const Dashboard = () => {
               <Settings className="w-4 h-4 mr-2" />
               Settings
             </Button>
+            <Button variant="outline" onClick={onSignOut}>
+              Sign Out
+            </Button>
           </div>
         </div>
       </header>
 
       <div className="p-6">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index} className="border-0 shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    {stat.icon}
-                  </div>
-                  <div className={`flex items-center text-sm font-medium ${
-                    stat.trend === 'up' ? 'text-green-600' : 
-                    stat.trend === 'down' ? 'text-red-600' : 'text-gray-600'
-                  }`}>
-                    {stat.trend === 'up' && <ArrowUpRight className="w-4 h-4 mr-1" />}
-                    {stat.trend === 'down' && <ArrowDownRight className="w-4 h-4 mr-1" />}
-                    {stat.change}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
-                  <p className="text-sm text-gray-600">{stat.title}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Transactions */}
-          <div className="lg:col-span-2">
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Recent Transactions</CardTitle>
-                  <Button variant="outline" size="sm">View All</Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentTransactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className={`p-2 rounded-full ${
-                          transaction.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                        }`}>
-                          {transaction.type === 'income' ? 
-                            <ArrowUpRight className="w-4 h-4" /> : 
-                            <ArrowDownRight className="w-4 h-4" />
-                          }
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{transaction.description}</p>
-                          <p className="text-sm text-gray-600">{transaction.date}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={`font-semibold ${
-                          transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {transaction.type === 'income' ? '+' : '-'}{transaction.amount}
-                        </p>
-                        <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
-                          {transaction.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Upcoming Items */}
-          <div>
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Upcoming</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {upcomingItems.map((item, index) => (
-                    <div key={index} className="p-4 border border-gray-200 rounded-lg">
-                      <div className="flex justify-between items-start mb-2">
-                        <Badge variant={
-                          item.priority === 'high' ? 'destructive' : 
-                          item.priority === 'medium' ? 'default' : 'secondary'
-                        }>
-                          {item.priority}
-                        </Badge>
-                        <p className="font-semibold text-gray-900">{item.amount}</p>
-                      </div>
-                      <p className="text-sm font-medium text-gray-900 mb-1">{item.description}</p>
-                      <p className="text-xs text-gray-600">Due {item.dueDate}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
         {/* Navigation Tabs */}
-        <div className="mt-8">
+        <div className="mb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-7 bg-white border border-gray-200 rounded-lg p-1">
               <TabsTrigger value="overview" className="flex items-center space-x-2">
@@ -271,37 +186,132 @@ const Dashboard = () => {
             </TabsList>
 
             <TabsContent value="overview" className="mt-6">
-              <Card className="border-0 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="text-center py-12">
-                    <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Financial Overview</h3>
-                    <p className="text-gray-600">Your complete financial dashboard is displayed above.</p>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {stats.map((stat, index) => (
+                  <Card key={index} className="border-0 shadow-lg">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-2 bg-blue-50 rounded-lg">
+                          {stat.icon}
+                        </div>
+                        <div className={`flex items-center text-sm font-medium ${
+                          stat.trend === 'up' ? 'text-green-600' : 
+                          stat.trend === 'down' ? 'text-red-600' : 'text-gray-600'
+                        }`}>
+                          {stat.trend === 'up' && <ArrowUpRight className="w-4 h-4 mr-1" />}
+                          {stat.trend === 'down' && <ArrowDownRight className="w-4 h-4 mr-1" />}
+                          {stat.change}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
+                        <p className="text-sm text-gray-600">{stat.title}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Main Content */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Recent Transactions */}
+                <div className="lg:col-span-2">
+                  <Card className="border-0 shadow-lg">
+                    <CardHeader>
+                      <div className="flex justify-between items-center">
+                        <CardTitle>Recent Transactions</CardTitle>
+                        <Button variant="outline" size="sm">View All</Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {recentTransactions.map((transaction) => (
+                          <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div className="flex items-center space-x-4">
+                              <div className={`p-2 rounded-full ${
+                                transaction.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                              }`}>
+                                {transaction.type === 'income' ? 
+                                  <ArrowUpRight className="w-4 h-4" /> : 
+                                  <ArrowDownRight className="w-4 h-4" />
+                                }
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">{transaction.description}</p>
+                                <p className="text-sm text-gray-600">{transaction.date}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className={`font-semibold ${
+                                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {transaction.type === 'income' ? '+' : '-'}{transaction.amount}
+                              </p>
+                              <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
+                                {transaction.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Upcoming Items */}
+                <div>
+                  <Card className="border-0 shadow-lg">
+                    <CardHeader>
+                      <CardTitle>Upcoming</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {upcomingItems.map((item, index) => (
+                          <div key={index} className="p-4 border border-gray-200 rounded-lg">
+                            <div className="flex justify-between items-start mb-2">
+                              <Badge variant={
+                                item.priority === 'high' ? 'destructive' : 
+                                item.priority === 'medium' ? 'default' : 'secondary'
+                              }>
+                                {item.priority}
+                              </Badge>
+                              <p className="font-semibold text-gray-900">{item.amount}</p>
+                            </div>
+                            <p className="text-sm font-medium text-gray-900 mb-1">{item.description}</p>
+                            <p className="text-xs text-gray-600">Due {item.dueDate}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             </TabsContent>
 
-            {/* Placeholder content for other tabs */}
-            {['income', 'invoices', 'expenses', 'properties', 'clients', 'subscriptions'].map((tab) => (
-              <TabsContent key={tab} value={tab} className="mt-6">
-                <Card className="border-0 shadow-lg">
-                  <CardContent className="p-6">
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-2xl font-bold text-gray-400 capitalize">{tab[0]}</span>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2 capitalize">{tab} Management</h3>
-                      <p className="text-gray-600 mb-4">Manage your {tab} efficiently with our comprehensive tools.</p>
-                      <Button className="bg-blue-600 hover:bg-blue-700">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add New {tab.slice(0, -1)}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            ))}
+            <TabsContent value="income" className="mt-6">
+              <Income />
+            </TabsContent>
+
+            <TabsContent value="invoices" className="mt-6">
+              <Invoices />
+            </TabsContent>
+
+            <TabsContent value="expenses" className="mt-6">
+              <Expenses />
+            </TabsContent>
+
+            <TabsContent value="properties" className="mt-6">
+              <Properties />
+            </TabsContent>
+
+            <TabsContent value="clients" className="mt-6">
+              <Clients />
+            </TabsContent>
+
+            <TabsContent value="subscriptions" className="mt-6">
+              <Subscriptions />
+            </TabsContent>
           </Tabs>
         </div>
       </div>
