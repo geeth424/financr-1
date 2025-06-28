@@ -29,7 +29,7 @@ const ViewRenderer = ({
     case 'auth':
       return <AuthForm onAuthSuccess={onAuthSuccess} />;
     case 'onboarding':
-      return <OnboardingFlow onComplete={onOnboardingComplete} />;
+      return <OnboardingFlow />;
     case 'dashboard':
       return <Dashboard user={user} onSignOut={onSignOut} />;
     default:

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, DollarSign, Calendar, Edit } from "lucide-react";
+import { Plus, DollarSign, Calendar, Edit, FileText, Trash2 } from "lucide-react";
 
 const Income = () => {
   const [incomeEntries, setIncomeEntries] = useState([
@@ -202,7 +202,7 @@ const Income = () => {
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleDelete(entry.id)}>
-                        <FileText className="h-4 w-4 text-red-600" />
+                        <Trash2 className="h-4 w-4 text-red-600" />
                       </Button>
                     </div>
                   </TableCell>
