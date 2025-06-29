@@ -1,313 +1,304 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Users, DollarSign, FileText, Mail, Phone, MapPin, Edit, Eye } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, Mail, Phone, Building } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 
-const Clients = () => {
-  const [clients, setClients] = useState([
-    {
-      id: 1,
-      name: 'Client A',
-      email: 'clientA@example.com',
-      phone: '+1 (555) 123-4567',
-      company: 'Tech Startup Inc.',
-      address: '123 Business Blvd, City, State 12345',
-      totalBilled: 12500,
-      totalPaid: 10000,
-      activeProjects: 2,
-      lastInvoice: '2024-01-15',
-      status: 'active'
-    },
-    {
-      id: 2,
-      name: 'Client B',
-      email: 'clientB@example.com',
-      phone: '+1 (555) 987-6543',
-      company: 'Marketing Agency LLC',
-      address: '456 Corporate Ave, City, State 12345',
-      totalBilled: 8750,
-      totalPaid: 8750,
-      activeProjects: 1,
-      lastInvoice: '2024-01-10',
-      status: 'active'
-    },
-    {
-      id: 3,
-      name: 'Client C',
-      email: 'clientC@example.com',
-      phone: '+1 (555) 456-7890',
-      company: 'Retail Solutions Co.',
-      address: '789 Commerce St, City, State 12345',
-      totalBilled: 15200,
-      totalPaid: 12800,
-      activeProjects: 0,
-      lastInvoice: '2023-12-20',
-      status: 'inactive'
-    }
-  ]);
+interface Client {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  company?: string;
+  notes?: string;
+  created_at: string;
+}
 
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newClient, setNewClient] = useState({
+interface ClientsProps {
+  user: User | null;
+}
+
+const Clients = ({ user }: ClientsProps) => {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
+    address: '',
     company: '',
-    address: ''
+    notes: ''
   });
+  const { toast } = useToast();
 
-  const totalRevenue = clients.reduce((sum, client) => sum + client.totalBilled, 0);
-  const totalPaid = clients.reduce((sum, client) => sum + client.totalPaid, 0);
-  const activeClients = clients.filter(client => client.status === 'active').length;
-  const outstandingAmount = totalRevenue - totalPaid;
+  useEffect(() => {
+    if (user) {
+      fetchClients();
+    }
+  }, [user]);
 
-  const handleAddClient = () => {
-    if (newClient.name && newClient.email) {
-      const client = {
-        id: Date.now(),
-        name: newClient.name,
-        email: newClient.email,
-        phone: newClient.phone,
-        company: newClient.company,
-        address: newClient.address,
-        totalBilled: 0,
-        totalPaid: 0,
-        activeProjects: 0,
-        lastInvoice: '',
-        status: 'active'
-      };
-      setClients([client, ...clients]);
-      setNewClient({ name: '', email: '', phone: '', company: '', address: '' });
-      setShowAddForm(false);
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch clients",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'inactive': return 'bg-gray-100 text-gray-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    try {
+      if (editingClient) {
+        const { error } = await supabase
+          .from('clients')
+          .update(formData)
+          .eq('id', editingClient.id);
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Client updated successfully",
+        });
+      } else {
+        const { error } = await supabase
+          .from('clients')
+          .insert([{ ...formData, user_id: user.id }]);
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Client created successfully",
+        });
+      }
+
+      setIsDialogOpen(false);
+      setEditingClient(null);
+      setFormData({ name: '', email: '', phone: '', address: '', company: '', notes: '' });
+      fetchClients();
+    } catch (error) {
+      console.error('Error saving client:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save client",
+        variant: "destructive",
+      });
     }
   };
+
+  const handleEdit = (client: Client) => {
+    setEditingClient(client);
+    setFormData({
+      name: client.name,
+      email: client.email || '',
+      phone: client.phone || '',
+      address: client.address || '',
+      company: client.company || '',
+      notes: client.notes || ''
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this client?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast({
+        title: "Success",
+        description: "Client deleted successfully",
+      });
+      fetchClients();
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete client",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loading) {
+    return <div className="flex justify-center py-8">Loading clients...</div>;
+  }
 
   return (
     <div className="space-y-6">
-      {/* Client Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {clients.length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {activeClients} active
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              ${totalRevenue.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              All time billing
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Amount Paid</CardTitle>
-            <DollarSign className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              ${totalPaid.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Collected
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
-            <FileText className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              ${outstandingAmount.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Pending payment
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Client Management */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Client Management</CardTitle>
-            <CardDescription>Manage your client contacts and relationships</CardDescription>
-          </div>
-          <Button onClick={() => setShowAddForm(!showAddForm)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Client
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {showAddForm && (
-            <div className="mb-6 p-4 border rounded-lg bg-slate-50">
-              <h3 className="font-semibold mb-4">Add New Client</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Client Name</Label>
-                  <Input
-                    id="name"
-                    value={newClient.name}
-                    onChange={(e) => setNewClient({...newClient, name: e.target.value})}
-                    placeholder="John Smith"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newClient.email}
-                    onChange={(e) => setNewClient({...newClient, email: e.target.value})}
-                    placeholder="john@example.com"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={newClient.phone}
-                    onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
-                    placeholder="+1 (555) 123-4567"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="company">Company</Label>
-                  <Input
-                    id="company"
-                    value={newClient.company}
-                    onChange={(e) => setNewClient({...newClient, company: e.target.value})}
-                    placeholder="Company Name (optional)"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input
-                    id="address"
-                    value={newClient.address}
-                    onChange={(e) => setNewClient({...newClient, address: e.target.value})}
-                    placeholder="Full address (optional)"
-                  />
-                </div>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Clients</h1>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => {
+              setEditingClient(null);
+              setFormData({ name: '', email: '', phone: '', address: '', company: '', notes: '' });
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Client
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>{editingClient ? 'Edit Client' : 'Add New Client'}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
               </div>
-              <div className="flex justify-end gap-2 mt-4">
-                <Button variant="outline" onClick={() => setShowAddForm(false)}>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="company">Company</Label>
+                <Input
+                  id="company"
+                  value={formData.company}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="address">Address</Label>
+                <Textarea
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleAddClient}>
-                  Add Client
+                <Button type="submit">
+                  {editingClient ? 'Update' : 'Create'} Client
                 </Button>
               </div>
-            </div>
-          )}
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-          {/* Clients Table */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Client</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Projects</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total Billed</TableHead>
-                <TableHead className="text-right">Outstanding</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clients.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{client.name}</div>
-                      {client.company && (
-                        <div className="text-sm text-muted-foreground">{client.company}</div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Mail className="h-3 w-3" />
-                        {client.email}
-                      </div>
-                      {client.phone && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Phone className="h-3 w-3" />
-                          {client.phone}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-center">
-                      <div className="font-medium">{client.activeProjects}</div>
-                      <div className="text-xs text-muted-foreground">active</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(client.status)}`}>
-                      {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    ${client.totalBilled.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right font-medium text-orange-600">
-                    ${(client.totalBilled - client.totalPaid).toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {clients.map((client) => (
+          <Card key={client.id}>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-semibold">{client.name}</h3>
+                  {client.company && (
+                    <p className="text-sm text-muted-foreground flex items-center mt-1">
+                      <Building className="h-3 w-3 mr-1" />
+                      {client.company}
+                    </p>
+                  )}
+                </div>
+                <div className="flex space-x-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEdit(client)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(client.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {client.email && (
+                  <p className="text-sm flex items-center">
+                    <Mail className="h-3 w-3 mr-2" />
+                    {client.email}
+                  </p>
+                )}
+                {client.phone && (
+                  <p className="text-sm flex items-center">
+                    <Phone className="h-3 w-3 mr-2" />
+                    {client.phone}
+                  </p>
+                )}
+                {client.address && (
+                  <p className="text-sm text-muted-foreground">{client.address}</p>
+                )}
+                {client.notes && (
+                  <p className="text-sm text-muted-foreground italic">{client.notes}</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {clients.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground mb-4">No clients found</p>
+          <Button onClick={() => setIsDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Your First Client
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

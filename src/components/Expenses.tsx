@@ -1,318 +1,429 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, FileText, Calendar, Edit } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, Upload, Receipt } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 
-const Expenses = () => {
-  const [expenses, setExpenses] = useState([
-    { 
-      id: 1, 
-      description: 'Adobe Creative Suite', 
-      category: 'Software', 
-      amount: 52.99, 
-      date: '2024-01-14', 
-      recurring: true,
-      receipt: true
-    },
-    { 
-      id: 2, 
-      description: 'Office Supplies', 
-      category: 'Office', 
-      amount: 125.43, 
-      date: '2024-01-08', 
-      recurring: false,
-      receipt: true
-    },
-    { 
-      id: 3, 
-      description: 'Internet & Phone', 
-      category: 'Utilities', 
-      amount: 89.99, 
-      date: '2024-01-05', 
-      recurring: true,
-      receipt: false
-    },
-    { 
-      id: 4, 
-      description: 'Client Lunch Meeting', 
-      category: 'Meals', 
-      amount: 67.50, 
-      date: '2024-01-03', 
-      recurring: false,
-      receipt: true
-    }
-  ]);
+interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  category: string;
+  subcategory?: string;
+  date_incurred: string;
+  vendor?: string;
+  payment_method?: string;
+  is_tax_deductible: boolean;
+  receipt_url?: string;
+  notes?: string;
+  created_at: string;
+}
 
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newExpense, setNewExpense] = useState({
+interface ExpensesProps {
+  user: User | null;
+}
+
+const Expenses = ({ user }: ExpensesProps) => {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [formData, setFormData] = useState({
     description: '',
-    category: 'Office',
     amount: '',
-    date: '',
-    recurring: false
+    category: '',
+    subcategory: '',
+    date_incurred: '',
+    vendor: '',
+    payment_method: '',
+    is_tax_deductible: true,
+    notes: ''
   });
+  const { toast } = useToast();
 
-  const categories = ['Office', 'Software', 'Utilities', 'Meals', 'Travel', 'Marketing', 'Professional Services', 'Other'];
+  const categories = [
+    'Office Supplies',
+    'Travel',
+    'Meals & Entertainment',
+    'Professional Services',
+    'Software & Subscriptions',
+    'Marketing & Advertising',
+    'Equipment',
+    'Utilities',
+    'Rent',
+    'Insurance',
+    'Other'
+  ];
+
+  const paymentMethods = [
+    'Cash',
+    'Credit Card',
+    'Debit Card',
+    'Bank Transfer',
+    'Check',
+    'PayPal',
+    'Other'
+  ];
+
+  useEffect(() => {
+    if (user) {
+      fetchExpenses();
+    }
+  }, [user]);
+
+  const fetchExpenses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .order('date_incurred', { ascending: false });
+
+      if (error) throw error;
+      setExpenses(data || []);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch expenses",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    try {
+      const expenseData = {
+        description: formData.description,
+        amount: parseFloat(formData.amount),
+        category: formData.category,
+        subcategory: formData.subcategory || null,
+        date_incurred: formData.date_incurred,
+        vendor: formData.vendor || null,
+        payment_method: formData.payment_method || null,
+        is_tax_deductible: formData.is_tax_deductible,
+        notes: formData.notes || null,
+        user_id: user.id
+      };
+
+      if (editingExpense) {
+        const { error } = await supabase
+          .from('expenses')
+          .update(expenseData)
+          .eq('id', editingExpense.id);
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Expense updated successfully",
+        });
+      } else {
+        const { error } = await supabase
+          .from('expenses')
+          .insert([expenseData]);
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Expense created successfully",
+        });
+      }
+
+      setIsDialogOpen(false);
+      setEditingExpense(null);
+      setFormData({
+        description: '',
+        amount: '',
+        category: '',
+        subcategory: '',
+        date_incurred: '',
+        vendor: '',
+        payment_method: '',
+        is_tax_deductible: true,
+        notes: ''
+      });
+      fetchExpenses();
+    } catch (error) {
+      console.error('Error saving expense:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save expense",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEdit = (expense: Expense) => {
+    setEditingExpense(expense);
+    setFormData({
+      description: expense.description,
+      amount: expense.amount.toString(),
+      category: expense.category,
+      subcategory: expense.subcategory || '',
+      date_incurred: expense.date_incurred,
+      vendor: expense.vendor || '',
+      payment_method: expense.payment_method || '',
+      is_tax_deductible: expense.is_tax_deductible,
+      notes: expense.notes || ''
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this expense?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast({
+        title: "Success",
+        description: "Expense deleted successfully",
+      });
+      fetchExpenses();
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete expense",
+        variant: "destructive",
+      });
+    }
+  };
 
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const recurringExpenses = expenses.filter(expense => expense.recurring).reduce((sum, expense) => sum + expense.amount, 0);
-  const thisMonthExpenses = expenses.filter(expense => 
-    new Date(expense.date).getMonth() === new Date().getMonth()
-  ).reduce((sum, expense) => sum + expense.amount, 0);
 
-  const expensesByCategory = categories.map(category => ({
-    category,
-    amount: expenses.filter(expense => expense.category === category).reduce((sum, expense) => sum + expense.amount, 0),
-    count: expenses.filter(expense => expense.category === category).length
-  })).filter(item => item.amount > 0);
-
-  const handleAddExpense = () => {
-    if (newExpense.description && newExpense.amount && newExpense.date) {
-      const expense = {
-        id: Date.now(),
-        description: newExpense.description,
-        category: newExpense.category,
-        amount: parseFloat(newExpense.amount),
-        date: newExpense.date,
-        recurring: newExpense.recurring,
-        receipt: false
-      };
-      setExpenses([expense, ...expenses]);
-      setNewExpense({ description: '', category: 'Office', amount: '', date: '', recurring: false });
-      setShowAddForm(false);
-    }
-  };
-
-  const handleDelete = (id: number) => {
-    setExpenses(expenses.filter(expense => expense.id !== id));
-  };
+  if (loading) {
+    return <div className="flex justify-center py-8">Loading expenses...</div>;
+  }
 
   return (
     <div className="space-y-6">
-      {/* Expense Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-            <FileText className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              ${totalExpenses.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              All time
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">This Month</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              ${thisMonthExpenses.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Current month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recurring</CardTitle>
-            <FileText className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              ${recurringExpenses.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Monthly recurring
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Categories</CardTitle>
-            <FileText className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {expensesByCategory.length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Active categories
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Expense Categories Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Expense Categories</CardTitle>
-          <CardDescription>Breakdown of expenses by category</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {expensesByCategory.map((item) => (
-              <div key={item.category} className="p-4 border rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-medium">{item.category}</h3>
-                  <span className="text-sm text-muted-foreground">{item.count} items</span>
-                </div>
-                <div className="text-xl font-bold text-red-600">
-                  ${item.amount.toLocaleString()}
-                </div>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Expenses</h1>
+          <p className="text-muted-foreground">Total: ${totalExpenses.toFixed(2)}</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => {
+              setEditingExpense(null);
+              setFormData({
+                description: '',
+                amount: '',
+                category: '',
+                subcategory: '',
+                date_incurred: '',
+                vendor: '',
+                payment_method: '',
+                is_tax_deductible: true,
+                notes: ''
+              });
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Expense
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>{editingExpense ? 'Edit Expense' : 'Add New Expense'}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="description">Description *</Label>
+                <Input
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  required
+                />
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Expense Management */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Expense Tracking</CardTitle>
-            <CardDescription>Track and categorize your business expenses</CardDescription>
-          </div>
-          <Button onClick={() => setShowAddForm(!showAddForm)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Expense
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {showAddForm && (
-            <div className="mb-6 p-4 border rounded-lg bg-slate-50">
-              <h3 className="font-semibold mb-4">Add New Expense</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Input
-                    id="description"
-                    value={newExpense.description}
-                    onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
-                    placeholder="e.g., Adobe Creative Suite"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <select
-                    id="category"
-                    value={newExpense.category}
-                    onChange={(e) => setNewExpense({...newExpense, category: e.target.value})}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="amount">Amount ($)</Label>
+                  <Label htmlFor="amount">Amount *</Label>
                   <Input
                     id="amount"
                     type="number"
-                    value={newExpense.amount}
-                    onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
-                    placeholder="0.00"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="date">Date</Label>
+                  <Label htmlFor="date_incurred">Date *</Label>
                   <Input
-                    id="date"
+                    id="date_incurred"
                     type="date"
-                    value={newExpense.date}
-                    onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
+                    value={formData.date_incurred}
+                    onChange={(e) => setFormData({ ...formData, date_incurred: e.target.value })}
+                    required
                   />
                 </div>
               </div>
-              <div className="flex items-center space-x-2 mt-4">
-                <input
-                  type="checkbox"
-                  id="recurring"
-                  checked={newExpense.recurring}
-                  onChange={(e) => setNewExpense({...newExpense, recurring: e.target.checked})}
-                />
-                <Label htmlFor="recurring">Recurring expense</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="category">Category *</Label>
+                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="subcategory">Subcategory</Label>
+                  <Input
+                    id="subcategory"
+                    value={formData.subcategory}
+                    onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+                  />
+                </div>
               </div>
-              <div className="flex justify-end gap-2 mt-4">
-                <Button variant="outline" onClick={() => setShowAddForm(false)}>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="vendor">Vendor</Label>
+                  <Input
+                    id="vendor"
+                    value={formData.vendor}
+                    onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="payment_method">Payment Method</Label>
+                  <Select value={formData.payment_method} onValueChange={(value) => setFormData({ ...formData, payment_method: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payment method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paymentMethods.map((method) => (
+                        <SelectItem key={method} value={method}>
+                          {method}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_tax_deductible"
+                  checked={formData.is_tax_deductible}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_tax_deductible: checked as boolean })}
+                />
+                <Label htmlFor="is_tax_deductible">Tax Deductible</Label>
+              </div>
+              <div>
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleAddExpense}>
-                  Add Expense
+                <Button type="submit">
+                  {editingExpense ? 'Update' : 'Create'} Expense
                 </Button>
               </div>
-            </div>
-          )}
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-          {/* Expenses Table */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Receipt</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {expenses.map((expense) => (
-                <TableRow key={expense.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      {expense.recurring && <FileText className="h-4 w-4 text-blue-600" />}
-                      {expense.description}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="px-2 py-1 bg-slate-100 text-slate-800 rounded-full text-xs">
-                      {expense.category}
-                    </span>
-                  </TableCell>
-                  <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    {expense.receipt ? (
-                      <span className="text-green-600 text-xs">✓ Uploaded</span>
-                    ) : (
+      <div className="space-y-4">
+        {expenses.map((expense) => (
+          <Card key={expense.id}>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-semibold">{expense.description}</h3>
+                  <p className="text-sm text-muted-foreground">{expense.category}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl font-bold">${expense.amount.toFixed(2)}</span>
+                  <div className="flex space-x-1">
+                    {expense.receipt_url && (
                       <Button variant="ghost" size="sm">
-                        <Plus className="h-4 w-4" />
+                        <Receipt className="h-4 w-4" />
                       </Button>
                     )}
-                  </TableCell>
-                  <TableCell className="text-right font-medium text-red-600">
-                    ${expense.amount.toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(expense.id)}>
-                        <FileText className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(expense)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(expense.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm font-medium">Date</p>
+                  <p className="text-sm">{new Date(expense.date_incurred).toLocaleDateString()}</p>
+                </div>
+                {expense.vendor && (
+                  <div>
+                    <p className="text-sm font-medium">Vendor</p>
+                    <p className="text-sm">{expense.vendor}</p>
+                  </div>
+                )}
+                {expense.payment_method && (
+                  <div>
+                    <p className="text-sm font-medium">Payment Method</p>
+                    <p className="text-sm">{expense.payment_method}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-medium">Tax Deductible</p>
+                  <p className="text-sm">{expense.is_tax_deductible ? 'Yes' : 'No'}</p>
+                </div>
+              </div>
+              {expense.notes && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium">Notes</p>
+                  <p className="text-sm text-muted-foreground">{expense.notes}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {expenses.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground mb-4">No expenses found</p>
+          <Button onClick={() => setIsDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Your First Expense
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
