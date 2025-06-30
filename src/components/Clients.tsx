@@ -50,8 +50,7 @@ const Clients = ({ user }: ClientsProps) => {
   const fetchClients = async () => {
     try {
       console.log('Fetching clients for user:', user?.id);
-      // Use any type to bypass TypeScript errors until types are regenerated
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('clients')
         .select('*')
         .order('created_at', { ascending: false });
@@ -82,7 +81,7 @@ const Clients = ({ user }: ClientsProps) => {
     try {
       if (editingClient) {
         console.log('Updating client:', editingClient.id, formData);
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('clients')
           .update(formData)
           .eq('id', editingClient.id);
@@ -93,7 +92,7 @@ const Clients = ({ user }: ClientsProps) => {
         });
       } else {
         console.log('Creating new client:', formData);
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('clients')
           .insert([{ ...formData, user_id: user.id }]);
         if (error) throw error;
@@ -135,7 +134,7 @@ const Clients = ({ user }: ClientsProps) => {
 
     try {
       console.log('Deleting client:', id);
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('clients')
         .delete()
         .eq('id', id);
