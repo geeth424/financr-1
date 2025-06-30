@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Calendar, DollarSign, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, Calendar, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,8 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -21,9 +21,9 @@ interface Subscription {
   billing_frequency: string;
   next_billing_date: string;
   category?: string;
-  auto_renewal: boolean;
-  is_active: boolean;
   notes?: string;
+  is_active: boolean;
+  auto_renewal: boolean;
   created_at: string;
 }
 
@@ -42,30 +42,14 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
     billing_frequency: 'monthly',
     next_billing_date: '',
     category: '',
-    auto_renewal: true,
+    notes: '',
     is_active: true,
-    notes: ''
+    auto_renewal: true
   });
   const { toast } = useToast();
 
-  const billingFrequencies = [
-    'weekly',
-    'monthly',
-    'quarterly',
-    'semi-annual',
-    'annual'
-  ];
-
-  const categories = [
-    'Software & Tools',
-    'Entertainment',
-    'News & Media',
-    'Cloud Storage',
-    'Business Services',
-    'Health & Fitness',
-    'Education',
-    'Other'
-  ];
+  const billingFrequencies = ['weekly', 'monthly', 'quarterly', 'yearly'];
+  const categories = ['Software', 'Entertainment', 'Utilities', 'Insurance', 'Marketing', 'Education', 'Other'];
 
   useEffect(() => {
     if (user) {
@@ -105,9 +89,9 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
         billing_frequency: formData.billing_frequency,
         next_billing_date: formData.next_billing_date,
         category: formData.category || null,
-        auto_renewal: formData.auto_renewal,
-        is_active: formData.is_active,
         notes: formData.notes || null,
+        is_active: formData.is_active,
+        auto_renewal: formData.auto_renewal,
         user_id: user.id
       };
 
@@ -140,9 +124,9 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
         billing_frequency: 'monthly',
         next_billing_date: '',
         category: '',
-        auto_renewal: true,
+        notes: '',
         is_active: true,
-        notes: ''
+        auto_renewal: true
       });
       fetchSubscriptions();
     } catch (error) {
@@ -163,9 +147,9 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
       billing_frequency: subscription.billing_frequency,
       next_billing_date: subscription.next_billing_date,
       category: subscription.category || '',
-      auto_renewal: subscription.auto_renewal,
+      notes: subscription.notes || '',
       is_active: subscription.is_active,
-      notes: subscription.notes || ''
+      auto_renewal: subscription.auto_renewal
     });
     setIsDialogOpen(true);
   };
@@ -195,17 +179,17 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
     }
   };
 
-  const toggleSubscriptionStatus = async (id: string, currentStatus: boolean) => {
+  const toggleSubscriptionStatus = async (id: string, isActive: boolean) => {
     try {
       const { error } = await supabase
         .from('subscriptions')
-        .update({ is_active: !currentStatus })
+        .update({ is_active: !isActive })
         .eq('id', id);
 
       if (error) throw error;
       toast({
         title: "Success",
-        description: `Subscription ${!currentStatus ? 'activated' : 'deactivated'}`,
+        description: `Subscription ${!isActive ? 'activated' : 'deactivated'}`,
       });
       fetchSubscriptions();
     } catch (error) {
@@ -222,28 +206,16 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
     return subscriptions
       .filter(sub => sub.is_active)
       .reduce((total, sub) => {
-        let monthlyCost = sub.cost;
-        switch (sub.billing_frequency) {
-          case 'weekly':
-            monthlyCost = sub.cost * 4.33;
-            break;
-          case 'quarterly':
-            monthlyCost = sub.cost / 3;
-            break;
-          case 'semi-annual':
-            monthlyCost = sub.cost / 6;
-            break;
-          case 'annual':
-            monthlyCost = sub.cost / 12;
-            break;
-        }
+        const monthlyCost = sub.billing_frequency === 'yearly' ? sub.cost / 12 :
+                           sub.billing_frequency === 'quarterly' ? sub.cost / 3 :
+                           sub.billing_frequency === 'weekly' ? sub.cost * 4 : sub.cost;
         return total + monthlyCost;
       }, 0);
   };
 
   const isUpcomingBilling = (date: string) => {
-    const today = new Date();
     const billingDate = new Date(date);
+    const today = new Date();
     const diffTime = billingDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 7 && diffDays >= 0;
@@ -258,10 +230,7 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Subscriptions</h1>
-          <p className="text-muted-foreground">
-            Monthly cost: ${getTotalMonthlyCost().toFixed(2)} • 
-            Annual cost: ${(getTotalMonthlyCost() * 12).toFixed(2)}
-          </p>
+          <p className="text-muted-foreground">Monthly total: ${getTotalMonthlyCost().toFixed(2)}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -273,9 +242,9 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
                 billing_frequency: 'monthly',
                 next_billing_date: '',
                 category: '',
-                auto_renewal: true,
+                notes: '',
                 is_active: true,
-                notes: ''
+                auto_renewal: true
               });
             }}>
               <Plus className="h-4 w-4 mr-2" />
@@ -317,7 +286,7 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
                     <SelectContent>
                       {billingFrequencies.map((freq) => (
                         <SelectItem key={freq} value={freq}>
-                          {freq.charAt(0).toUpperCase() + freq.slice(1).replace('-', ' ')}
+                          {freq.charAt(0).toUpperCase() + freq.slice(1)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -342,31 +311,13 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                      {categories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="auto_renewal"
-                    checked={formData.auto_renewal}
-                    onCheckedChange={(checked) => setFormData({ ...formData, auto_renewal: checked as boolean })}
-                  />
-                  <Label htmlFor="auto_renewal">Auto Renewal</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="is_active"
-                    checked={formData.is_active}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked as boolean })}
-                  />
-                  <Label htmlFor="is_active">Active</Label>
                 </div>
               </div>
               <div>
@@ -376,6 +327,24 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 />
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="is_active"
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked as boolean })}
+                  />
+                  <Label htmlFor="is_active">Active</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="auto_renewal"
+                    checked={formData.auto_renewal}
+                    onCheckedChange={(checked) => setFormData({ ...formData, auto_renewal: checked as boolean })}
+                  />
+                  <Label htmlFor="auto_renewal">Auto Renewal</Label>
+                </div>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -390,41 +359,36 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="space-y-4">
         {subscriptions.map((subscription) => (
-          <Card key={subscription.id} className={!subscription.is_active ? 'opacity-60' : ''}>
-            <CardHeader className="pb-3">
+          <Card key={subscription.id}>
+            <CardHeader>
               <CardTitle className="flex justify-between items-start">
                 <div>
                   <h3 className="font-semibold">{subscription.service_name}</h3>
-                  {subscription.category && (
-                    <p className="text-sm text-muted-foreground">{subscription.category}</p>
-                  )}
+                  <p className="text-sm text-muted-foreground capitalize">
+                    {subscription.billing_frequency} • {subscription.category}
+                  </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {isUpcomingBilling(subscription.next_billing_date) && subscription.is_active && (
-                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                  <Badge variant={subscription.is_active ? "default" : "secondary"}>
+                    {subscription.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                  {isUpcomingBilling(subscription.next_billing_date) && (
+                    <AlertCircle className="h-4 w-4 text-yellow-500" />
                   )}
                   <div className="flex space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleSubscriptionStatus(subscription.id, subscription.is_active)}
-                    >
-                      {subscription.is_active ? 'Pause' : 'Activate'}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(subscription)}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(subscription)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(subscription.id)}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => toggleSubscriptionStatus(subscription.id, subscription.is_active)}
                     >
+                      {subscription.is_active ? 'Pause' : 'Resume'}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(subscription.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -432,36 +396,27 @@ const Subscriptions = ({ user }: SubscriptionsProps) => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    <span className="text-lg font-semibold">${subscription.cost.toFixed(2)}</span>
-                  </div>
-                  <Badge variant="outline">
-                    {subscription.billing_frequency.replace('-', ' ')}
-                  </Badge>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm font-medium">Cost</p>
+                  <p className="text-2xl font-bold">${subscription.cost.toFixed(2)}</p>
                 </div>
-                
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Next Billing</p>
-                    <p className="text-sm">{new Date(subscription.next_billing_date).toLocaleDateString()}</p>
-                  </div>
+                <div>
+                  <p className="text-sm font-medium">Next Billing</p>
+                  <p className="text-sm flex items-center">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {new Date(subscription.next_billing_date).toLocaleDateString()}
+                  </p>
                 </div>
-                
-                <div className="flex items-center space-x-4">
-                  <Badge variant={subscription.is_active ? 'default' : 'secondary'}>
-                    {subscription.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                  {subscription.auto_renewal && (
-                    <Badge variant="outline">Auto-renew</Badge>
-                  )}
+                <div>
+                  <p className="text-sm font-medium">Auto Renewal</p>
+                  <p className="text-sm">{subscription.auto_renewal ? 'Yes' : 'No'}</p>
                 </div>
-                
                 {subscription.notes && (
-                  <p className="text-sm text-muted-foreground italic">{subscription.notes}</p>
+                  <div>
+                    <p className="text-sm font-medium">Notes</p>
+                    <p className="text-sm text-muted-foreground">{subscription.notes}</p>
+                  </div>
                 )}
               </div>
             </CardContent>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Home, MapPin, DollarSign } from 'lucide-react';
+import { Plus, Edit, Trash2, Home, DollarSign, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,16 +48,7 @@ const Properties = ({ user }: PropertiesProps) => {
   });
   const { toast } = useToast();
 
-  const propertyTypes = [
-    'residential',
-    'commercial',
-    'condo',
-    'townhouse',
-    'apartment',
-    'single-family',
-    'multi-family',
-    'other'
-  ];
+  const propertyTypes = ['residential', 'commercial', 'condo', 'single-family', 'multi-family'];
 
   useEffect(() => {
     if (user) {
@@ -223,14 +214,31 @@ const Properties = ({ user }: PropertiesProps) => {
               <DialogTitle>{editingProperty ? 'Edit Property' : 'Add New Property'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Property Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">Property Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="property_type">Property Type</Label>
+                  <Select value={formData.property_type} onValueChange={(value) => setFormData({ ...formData, property_type: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {propertyTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div>
                 <Label htmlFor="address">Address *</Label>
@@ -243,21 +251,6 @@ const Properties = ({ user }: PropertiesProps) => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="property_type">Property Type</Label>
-                  <Select value={formData.property_type} onValueChange={(value) => setFormData({ ...formData, property_type: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {propertyTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type.charAt(0).toUpperCase() + type.slice(1).replace('-', ' ')}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
                   <Label htmlFor="purchase_price">Purchase Price</Label>
                   <Input
                     id="purchase_price"
@@ -267,16 +260,16 @@ const Properties = ({ user }: PropertiesProps) => {
                     onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
                   />
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="monthly_rent">Monthly Rent</Label>
-                <Input
-                  id="monthly_rent"
-                  type="number"
-                  step="0.01"
-                  value={formData.monthly_rent}
-                  onChange={(e) => setFormData({ ...formData, monthly_rent: e.target.value })}
-                />
+                <div>
+                  <Label htmlFor="monthly_rent">Monthly Rent</Label>
+                  <Input
+                    id="monthly_rent"
+                    type="number"
+                    step="0.01"
+                    value={formData.monthly_rent}
+                    onChange={(e) => setFormData({ ...formData, monthly_rent: e.target.value })}
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -330,7 +323,7 @@ const Properties = ({ user }: PropertiesProps) => {
         </Dialog>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {properties.map((property) => (
           <Card key={property.id}>
             <CardHeader className="pb-3">
@@ -340,72 +333,35 @@ const Properties = ({ user }: PropertiesProps) => {
                     <Home className="h-4 w-4 mr-2" />
                     {property.name}
                   </h3>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {property.property_type.replace('-', ' ')}
-                  </p>
+                  <p className="text-sm text-muted-foreground capitalize">{property.property_type}</p>
                 </div>
                 <div className="flex space-x-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEdit(property)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => handleEdit(property)}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(property.id)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => handleDelete(property.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-start">
-                  <MapPin className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
-                  <p className="text-sm">{property.address}</p>
-                </div>
-                
-                {property.purchase_price && (
-                  <div className="flex items-center">
-                    <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Purchase Price</p>
-                      <p className="text-sm">${property.purchase_price.toLocaleString()}</p>
-                    </div>
-                  </div>
-                )}
-                
+              <div className="space-y-2">
+                <p className="text-sm">{property.address}</p>
                 {property.monthly_rent && (
-                  <div className="flex items-center">
-                    <DollarSign className="h-4 w-4 mr-2 text-green-600" />
-                    <div>
-                      <p className="text-sm font-medium">Monthly Rent</p>
-                      <p className="text-sm">${property.monthly_rent.toLocaleString()}/month</p>
-                    </div>
-                  </div>
+                  <p className="text-sm flex items-center">
+                    <DollarSign className="h-3 w-3 mr-1" />
+                    ${property.monthly_rent}/month
+                  </p>
                 )}
-                
                 {property.tenant_name && (
-                  <div>
-                    <p className="text-sm font-medium">Current Tenant</p>
-                    <p className="text-sm">{property.tenant_name}</p>
-                    {property.tenant_email && (
-                      <p className="text-xs text-muted-foreground">{property.tenant_email}</p>
-                    )}
-                  </div>
+                  <p className="text-sm">Tenant: {property.tenant_name}</p>
                 )}
-                
-                {property.lease_start_date && property.lease_end_date && (
-                  <div>
-                    <p className="text-sm font-medium">Lease Period</p>
-                    <p className="text-sm">
-                      {new Date(property.lease_start_date).toLocaleDateString()} - {new Date(property.lease_end_date).toLocaleDateString()}
-                    </p>
-                  </div>
+                {property.lease_end_date && (
+                  <p className="text-sm flex items-center">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    Lease ends: {new Date(property.lease_end_date).toLocaleDateString()}
+                  </p>
                 )}
               </div>
             </CardContent>
