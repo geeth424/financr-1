@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Users, 
@@ -10,7 +9,8 @@ import {
   BarChart3,
   LogOut,
   Menu,
-  X
+  X,
+  Calculator
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +24,7 @@ import Expenses from './Expenses';
 import Properties from './Properties';
 import Subscriptions from './Subscriptions';
 import FinancialReports from './FinancialReports';
+import TaxReports from './TaxReports';
 
 interface DashboardProps {
   user: User | null;
@@ -51,6 +52,7 @@ const Dashboard = ({ user, onSignOut }: DashboardProps) => {
     { id: 'expenses', label: 'Expenses', icon: CreditCard },
     { id: 'properties', label: 'Properties', icon: Home },
     { id: 'subscriptions', label: 'Subscriptions', icon: Repeat },
+    { id: 'tax-reports', label: 'Tax Reports', icon: Calculator },
     { id: 'reports', label: 'Reports', icon: BarChart3 }
   ];
 
@@ -142,6 +144,8 @@ const Dashboard = ({ user, onSignOut }: DashboardProps) => {
         return <Properties user={user} />;
       case 'subscriptions':
         return <Subscriptions user={user} />;
+      case 'tax-reports':
+        return <TaxReports user={user} />;
       case 'reports':
         return <FinancialReports user={user} />;
       default:

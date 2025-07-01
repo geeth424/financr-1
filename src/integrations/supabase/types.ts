@@ -426,12 +426,193 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_deduction_items: {
+        Row: {
+          amount: number
+          created_at: string
+          deduction_type: string
+          description: string
+          id: string
+          tax_report_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          deduction_type: string
+          description: string
+          id?: string
+          tax_report_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          deduction_type?: string
+          description?: string
+          id?: string
+          tax_report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_deduction_items_tax_report_id_fkey"
+            columns: ["tax_report_id"]
+            isOneToOne: false
+            referencedRelation: "tax_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_income_items: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          income_type: string
+          tax_report_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description: string
+          id?: string
+          income_type: string
+          tax_report_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          income_type?: string
+          tax_report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_income_items_tax_report_id_fkey"
+            columns: ["tax_report_id"]
+            isOneToOne: false
+            referencedRelation: "tax_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_reports: {
+        Row: {
+          adjusted_gross_income: number | null
+          business_expenses: number | null
+          capital_gains: number | null
+          charitable_contributions: number | null
+          created_at: string
+          dividend_income: number | null
+          estimated_refund: number | null
+          federal_tax: number | null
+          filing_status: string
+          gross_income: number | null
+          health_insurance_premiums: number | null
+          home_office_deduction: number | null
+          id: string
+          interest_income: number | null
+          medical_expenses: number | null
+          other_deductions: number | null
+          other_income: number | null
+          rental_income: number | null
+          report_name: string
+          retirement_contributions: number | null
+          self_employment_income: number | null
+          self_employment_tax: number | null
+          social_security_income: number | null
+          student_loan_interest: number | null
+          tax_year: number
+          taxable_income: number | null
+          total_tax_liability: number | null
+          unemployment_income: number | null
+          updated_at: string
+          use_standard_deduction: boolean | null
+          user_id: string
+          vehicle_expenses: number | null
+          w2_wages: number | null
+        }
+        Insert: {
+          adjusted_gross_income?: number | null
+          business_expenses?: number | null
+          capital_gains?: number | null
+          charitable_contributions?: number | null
+          created_at?: string
+          dividend_income?: number | null
+          estimated_refund?: number | null
+          federal_tax?: number | null
+          filing_status?: string
+          gross_income?: number | null
+          health_insurance_premiums?: number | null
+          home_office_deduction?: number | null
+          id?: string
+          interest_income?: number | null
+          medical_expenses?: number | null
+          other_deductions?: number | null
+          other_income?: number | null
+          rental_income?: number | null
+          report_name?: string
+          retirement_contributions?: number | null
+          self_employment_income?: number | null
+          self_employment_tax?: number | null
+          social_security_income?: number | null
+          student_loan_interest?: number | null
+          tax_year?: number
+          taxable_income?: number | null
+          total_tax_liability?: number | null
+          unemployment_income?: number | null
+          updated_at?: string
+          use_standard_deduction?: boolean | null
+          user_id: string
+          vehicle_expenses?: number | null
+          w2_wages?: number | null
+        }
+        Update: {
+          adjusted_gross_income?: number | null
+          business_expenses?: number | null
+          capital_gains?: number | null
+          charitable_contributions?: number | null
+          created_at?: string
+          dividend_income?: number | null
+          estimated_refund?: number | null
+          federal_tax?: number | null
+          filing_status?: string
+          gross_income?: number | null
+          health_insurance_premiums?: number | null
+          home_office_deduction?: number | null
+          id?: string
+          interest_income?: number | null
+          medical_expenses?: number | null
+          other_deductions?: number | null
+          other_income?: number | null
+          rental_income?: number | null
+          report_name?: string
+          retirement_contributions?: number | null
+          self_employment_income?: number | null
+          self_employment_tax?: number | null
+          social_security_income?: number | null
+          student_loan_interest?: number | null
+          tax_year?: number
+          taxable_income?: number | null
+          total_tax_liability?: number | null
+          unemployment_income?: number | null
+          updated_at?: string
+          use_standard_deduction?: boolean | null
+          user_id?: string
+          vehicle_expenses?: number | null
+          w2_wages?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_tax_report: {
+        Args: { report_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
