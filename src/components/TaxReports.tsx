@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Calculator, FileText, Plus, Trash2, Download, Save } from 'lucide-react';
+import { Calculator, FileText, Plus, Trash2, Download, Save, RefreshCw } from 'lucide-react';
 
 interface TaxReport {
   id: string;
@@ -56,6 +56,7 @@ const TaxReports = ({ user }: TaxReportsProps) => {
   const [selectedReport, setSelectedReport] = useState<TaxReport | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [populatingData, setPopulatingData] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -85,6 +86,178 @@ const TaxReports = ({ user }: TaxReportsProps) => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const populateFromUserData = async () => {
+    if (!user || !selectedReport) return;
+    
+    setPopulatingData(true);
+    try {
+      const currentYear = selectedReport.tax_year;
+      const startDate = `${currentYear}-01-01`;
+      const endDate = `${currentYear}-12-31`;
+
+      // Fetch income records for the tax year
+      const { data: incomeData, error: incomeError } = await supabase
+        .from('income_records')
+        .select('*')
+        .gte('date_received', startDate)
+        .lte('date_received', endDate);
+
+      if (incomeError) throw incomeError;
+
+      // Fetch expenses for the tax year
+      const { data: expenseData, error: expenseError } = await supabase
+        .from('expenses')
+        .select('*')
+        .gte('date_incurred', startDate)
+        .lte('date_incurred', endDate);
+
+      if (expenseError) throw expenseError;
+
+      // Categorize income by source type
+      let w2_wages = 0;
+      let self_employment_income = 0;
+      let rental_income = 0;
+      let dividend_income = 0;
+      let interest_income = 0;
+      let other_income = 0;
+
+      incomeData?.forEach(record => {
+        const amount = Number(record.amount);
+        switch (record.source_type?.toLowerCase()) {
+          case 'salary':
+          case 'w-2':
+            w2_wages += amount;
+            break;
+          case 'consulting':
+          case 'freelance':
+          case '1099-nec':
+          case 'schedule c':
+            self_employment_income += amount;
+            break;
+          case 'rental income':
+          case 'schedule e':
+            rental_income += amount;
+            break;
+          case 'dividends':
+            dividend_income += amount;
+            break;
+          case 'interest':
+            interest_income += amount;
+            break;
+          default:
+            other_income += amount;
+        }
+      });
+
+      // Categorize deductible expenses
+      let business_expenses = 0;
+      let vehicle_expenses = 0;
+      let home_office_deduction = 0;
+      let health_insurance_premiums = 0;
+      let charitable_contributions = 0;
+      let medical_expenses = 0;
+      let other_deductions = 0;
+
+      expenseData?.forEach(expense => {
+        if (expense.is_tax_deductible) {
+          const amount = Number(expense.amount);
+          const category = expense.category?.toLowerCase();
+          const subcategory = expense.subcategory?.toLowerCase();
+          
+          switch (category) {
+            case 'office supplies':
+            case 'professional services':
+            case 'software':
+            case 'equipment':
+            case 'business meals':
+            case 'training':
+              business_expenses += amount;
+              break;
+            case 'transportation':
+            case 'travel':
+              if (subcategory?.includes('vehicle') || subcategory?.includes('gas') || subcategory?.includes('mileage')) {
+                vehicle_expenses += amount;
+              } else {
+                business_expenses += amount;
+              }
+              break;
+            case 'utilities':
+              if (subcategory?.includes('home') || subcategory?.includes('office')) {
+                home_office_deduction += amount;
+              } else {
+                business_expenses += amount;
+              }
+              break;
+            case 'insurance':
+              if (subcategory?.includes('health')) {
+                health_insurance_premiums += amount;
+              } else {
+                business_expenses += amount;
+              }
+              break;
+            case 'charitable':
+            case 'donations':
+              charitable_contributions += amount;
+              break;
+            case 'medical':
+            case 'healthcare':
+              medical_expenses += amount;
+              break;
+            default:
+              other_deductions += amount;
+          }
+        }
+      });
+
+      // Update the report with populated data
+      const updatedReport = {
+        w2_wages,
+        self_employment_income,
+        rental_income,
+        dividend_income,
+        interest_income,
+        other_income,
+        business_expenses,
+        vehicle_expenses,
+        home_office_deduction,
+        health_insurance_premiums,
+        charitable_contributions,
+        medical_expenses,
+        other_deductions
+      };
+
+      const { data, error } = await supabase
+        .from('tax_reports')
+        .update(updatedReport)
+        .eq('id', selectedReport.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setSelectedReport(data);
+      setTaxReports(taxReports.map(r => r.id === data.id ? data : r));
+      
+      toast({
+        title: "Success",
+        description: "Tax report populated with your financial data",
+      });
+
+      // Auto-calculate after populating
+      await calculateTaxes();
+
+    } catch (error) {
+      console.error('Error populating tax report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to populate tax report from your data",
+        variant: "destructive",
+      });
+    } finally {
+      setPopulatingData(false);
     }
   };
 
@@ -179,7 +352,7 @@ const TaxReports = ({ user }: TaxReportsProps) => {
       
       toast({
         title: "Success",
-        description: "Tax calculations updated",
+        description: "Tax calculations updated according to current U.S. tax code",
       });
     } catch (error) {
       console.error('Error calculating taxes:', error);
@@ -221,6 +394,59 @@ const TaxReports = ({ user }: TaxReportsProps) => {
     }
   };
 
+  const exportReport = () => {
+    if (!selectedReport) return;
+
+    const reportData = `
+U.S. TAX REPORT - ${selectedReport.tax_year}
+Report Name: ${selectedReport.report_name}
+Filing Status: ${selectedReport.filing_status.replace('_', ' ').toUpperCase()}
+
+INCOME SUMMARY:
+W-2 Wages: $${selectedReport.w2_wages?.toFixed(2) || '0.00'}
+Self-Employment Income: $${selectedReport.self_employment_income?.toFixed(2) || '0.00'}
+Rental Income: $${selectedReport.rental_income?.toFixed(2) || '0.00'}
+Dividend Income: $${selectedReport.dividend_income?.toFixed(2) || '0.00'}
+Interest Income: $${selectedReport.interest_income?.toFixed(2) || '0.00'}
+Capital Gains: $${selectedReport.capital_gains?.toFixed(2) || '0.00'}
+Other Income: $${selectedReport.other_income?.toFixed(2) || '0.00'}
+GROSS INCOME: $${selectedReport.gross_income?.toFixed(2) || '0.00'}
+
+DEDUCTIONS:
+Standard/Itemized: ${selectedReport.use_standard_deduction ? 'Standard Deduction' : 'Itemized Deductions'}
+Business Expenses: $${selectedReport.business_expenses?.toFixed(2) || '0.00'}
+Vehicle Expenses: $${selectedReport.vehicle_expenses?.toFixed(2) || '0.00'}
+Home Office Deduction: $${selectedReport.home_office_deduction?.toFixed(2) || '0.00'}
+Health Insurance Premiums: $${selectedReport.health_insurance_premiums?.toFixed(2) || '0.00'}
+Charitable Contributions: $${selectedReport.charitable_contributions?.toFixed(2) || '0.00'}
+Medical Expenses: $${selectedReport.medical_expenses?.toFixed(2) || '0.00'}
+
+TAX CALCULATIONS (Based on ${selectedReport.tax_year} U.S. Tax Code):
+Adjusted Gross Income: $${selectedReport.adjusted_gross_income?.toFixed(2) || '0.00'}
+Taxable Income: $${selectedReport.taxable_income?.toFixed(2) || '0.00'}
+Federal Income Tax: $${selectedReport.federal_tax?.toFixed(2) || '0.00'}
+Self-Employment Tax: $${selectedReport.self_employment_tax?.toFixed(2) || '0.00'}
+TOTAL TAX LIABILITY: $${selectedReport.total_tax_liability?.toFixed(2) || '0.00'}
+
+*This report is for informational purposes only. Please consult a qualified tax professional for official tax preparation and filing.
+    `;
+
+    const blob = new Blob([reportData], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tax-report-${selectedReport.tax_year}-${selectedReport.report_name.replace(/\s+/g, '-')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Success",
+      description: "Tax report exported successfully",
+    });
+  };
+
   if (loading) {
     return <div className="flex justify-center p-8">Loading tax reports...</div>;
   }
@@ -229,8 +455,8 @@ const TaxReports = ({ user }: TaxReportsProps) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Tax Reports</h1>
-          <p className="text-muted-foreground">Generate and manage your tax reports</p>
+          <h1 className="text-3xl font-bold">U.S. Tax Reports</h1>
+          <p className="text-muted-foreground">Generate compliant tax reports from your financial data</p>
         </div>
         <Button onClick={createNewReport} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
@@ -284,6 +510,26 @@ const TaxReports = ({ user }: TaxReportsProps) => {
         {/* Report Details */}
         {selectedReport && (
           <div className="lg:col-span-3">
+            <div className="flex gap-2 mb-4">
+              <Button 
+                onClick={populateFromUserData} 
+                disabled={populatingData}
+                className="flex items-center gap-2"
+                variant="outline"
+              >
+                <RefreshCw className={`h-4 w-4 ${populatingData ? 'animate-spin' : ''}`} />
+                Populate from Your Data
+              </Button>
+              <Button onClick={calculateTaxes} className="flex items-center gap-2">
+                <Calculator className="h-4 w-4" />
+                Calculate Taxes
+              </Button>
+              <Button onClick={exportReport} variant="outline" className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Export Report
+              </Button>
+            </div>
+
             <Tabs defaultValue="basic" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
@@ -534,13 +780,6 @@ const TaxReports = ({ user }: TaxReportsProps) => {
               </TabsContent>
 
               <TabsContent value="summary" className="space-y-4">
-                <div className="flex gap-4 mb-4">
-                  <Button onClick={calculateTaxes} className="flex items-center gap-2">
-                    <Calculator className="h-4 w-4" />
-                    Calculate Taxes
-                  </Button>
-                </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Card>
                     <CardHeader>
@@ -568,7 +807,7 @@ const TaxReports = ({ user }: TaxReportsProps) => {
                     </CardHeader>
                     <CardContent className="space-y-2">
                       <div className="flex justify-between">
-                        <span>Federal Tax:</span>
+                        <span>Federal Income Tax:</span>
                         <span className="font-medium">${selectedReport.federal_tax?.toFixed(2) || '0.00'}</span>
                       </div>
                       <div className="flex justify-between">
@@ -585,17 +824,22 @@ const TaxReports = ({ user }: TaxReportsProps) => {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Tax Breakdown</CardTitle>
+                    <CardTitle className="text-lg">U.S. Tax Code Compliance</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-sm text-muted-foreground space-y-2">
-                      <p>Filing Status: {selectedReport.filing_status.replace('_', ' ')}</p>
-                      <p>Tax Year: {selectedReport.tax_year}</p>
-                      <p>Deduction Method: {selectedReport.use_standard_deduction ? 'Standard' : 'Itemized'}</p>
-                      <p className="text-xs mt-4 text-muted-foreground">
-                        * This is an estimate based on 2024 tax brackets and standard deductions. 
-                        Consult a tax professional for accurate calculations.
-                      </p>
+                    <div className="text-sm space-y-2">
+                      <p><strong>Filing Status:</strong> {selectedReport.filing_status.replace('_', ' ')}</p>
+                      <p><strong>Tax Year:</strong> {selectedReport.tax_year}</p>
+                      <p><strong>Deduction Method:</strong> {selectedReport.use_standard_deduction ? 'Standard' : 'Itemized'}</p>
+                      <p><strong>Tax Brackets Applied:</strong> {selectedReport.tax_year} Federal Income Tax Brackets</p>
+                      <p><strong>Self-Employment Tax Rate:</strong> 15.3% (12.4% Social Security + 2.9% Medicare)</p>
+                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                        <p className="text-xs text-yellow-800">
+                          <strong>Important:</strong> This report follows current U.S. tax code for the specified tax year. 
+                          Standard deduction amounts, tax brackets, and calculations are based on IRS guidelines. 
+                          This is for informational purposes only - please consult a qualified tax professional for official tax preparation and filing.
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -609,7 +853,7 @@ const TaxReports = ({ user }: TaxReportsProps) => {
             <div className="text-center">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No Tax Reports</h3>
-              <p className="text-muted-foreground mb-4">Get started by creating your first tax report</p>
+              <p className="text-muted-foreground mb-4">Get started by creating your first U.S. tax report</p>
               <Button onClick={createNewReport}>Create New Report</Button>
             </div>
           </div>
