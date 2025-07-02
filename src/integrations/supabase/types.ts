@@ -19,6 +19,9 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
+          status: string | null
+          tags: string[] | null
+          tax_id: string | null
           updated_at: string
           user_id: string
         }
@@ -31,6 +34,9 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
+          status?: string | null
+          tags?: string[] | null
+          tax_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -43,6 +49,9 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
+          status?: string | null
+          tags?: string[] | null
+          tax_id?: string | null
           updated_at?: string
           user_id?: string
         }

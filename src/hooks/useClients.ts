@@ -55,7 +55,10 @@ export const useClients = (user: User | null) => {
         phone: formData.phone || null,
         address: formData.address || null,
         company: formData.company || null,
+        tax_id: formData.tax_id || null,
         notes: formData.notes || null,
+        tags: formData.tags || [],
+        status: formData.status || 'Active',
         user_id: user.id
       };
 
@@ -92,7 +95,10 @@ export const useClients = (user: User | null) => {
         phone: formData.phone || null,
         address: formData.address || null,
         company: formData.company || null,
+        tax_id: formData.tax_id || null,
         notes: formData.notes || null,
+        tags: formData.tags || [],
+        status: formData.status || 'Active',
         user_id: user.id
       };
 
