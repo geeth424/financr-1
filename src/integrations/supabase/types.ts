@@ -610,7 +610,7 @@ export type Database = {
     }
     Functions: {
       calculate_tax_report: {
-        Args: { report_id: string }
+        Args: Record<PropertyKey, never> | { report_id: string }
         Returns: undefined
       }
     }

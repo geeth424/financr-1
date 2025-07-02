@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Button } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { User } from '@supabase/supabase-js';
 import { Client, ClientFormData } from '@/types/client';
