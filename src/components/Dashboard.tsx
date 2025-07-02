@@ -25,6 +25,7 @@ import Properties from './Properties';
 import Subscriptions from './Subscriptions';
 import FinancialReports from './FinancialReports';
 import TaxReports from './TaxReports';
+import LinkedAccounts from './LinkedAccounts';
 
 interface DashboardProps {
   user: User | null;
@@ -53,7 +54,8 @@ const Dashboard = ({ user, onSignOut }: DashboardProps) => {
     { id: 'properties', label: 'Properties', icon: Home },
     { id: 'subscriptions', label: 'Subscriptions', icon: Repeat },
     { id: 'tax-reports', label: 'Tax Reports', icon: Calculator },
-    { id: 'reports', label: 'Reports', icon: BarChart3 }
+    { id: 'reports', label: 'Reports', icon: BarChart3 },
+    { id: 'linked-accounts', label: 'Linked Accounts', icon: CreditCard }
   ];
 
   useEffect(() => {
@@ -148,6 +150,8 @@ const Dashboard = ({ user, onSignOut }: DashboardProps) => {
         return <TaxReports user={user} />;
       case 'reports':
         return <FinancialReports user={user} />;
+      case 'linked-accounts':
+        return <LinkedAccounts user={user} />;
       default:
         return (
           <div className="space-y-6">
