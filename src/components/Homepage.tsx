@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, TrendingUp, FileText, Home, Users, Calendar, Shield } from 'lucide-react';
+import SplineViewer from './SplineViewer';
 
 interface HomepageProps {
   onGetStarted: () => void;
@@ -101,25 +102,39 @@ const Homepage = ({ onGetStarted, onViewPricing, onViewHelp, onViewSecurity }: H
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Financial operations,
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {" "}simplified
-            </span>
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-            The all-in-one platform for freelancers, consultants, and small landlords to manage income, 
-            expenses, invoicing, and tax preparation with confidence.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg" onClick={onViewPricing}>
-              Start for Free
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button size="lg" variant="outline" className="px-8 py-3 text-lg">
-              Watch Demo
-            </Button>
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="text-left">
+              <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                Financial operations,
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  {" "}simplified
+                </span>
+              </h1>
+              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                The all-in-one platform for freelancers, consultants, and small landlords to manage income, 
+                expenses, invoicing, and tax preparation with confidence.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg" onClick={onViewPricing}>
+                  Start for Free
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+                <Button size="lg" variant="outline" className="px-8 py-3 text-lg">
+                  Watch Demo
+                </Button>
+              </div>
+            </div>
+            
+            {/* 3D Spline Viewer */}
+            <div className="relative">
+              <div className="rounded-3xl overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 aspect-square">
+                <SplineViewer 
+                  url="https://prod.spline.design/2N7aSkM8QZB6Y60l/scene.splinecode"
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
