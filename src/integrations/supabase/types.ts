@@ -241,6 +241,63 @@ export type Database = {
         }
         Relationships: []
       }
+      linked_accounts: {
+        Row: {
+          account_id: string
+          account_name: string
+          account_subtype: string | null
+          account_type: string
+          available_balance: number | null
+          created_at: string
+          current_balance: number
+          id: string
+          institution_name: string
+          is_active: boolean
+          last_sync: string | null
+          mask: string | null
+          plaid_access_token: string
+          plaid_item_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          account_name: string
+          account_subtype?: string | null
+          account_type: string
+          available_balance?: number | null
+          created_at?: string
+          current_balance?: number
+          id?: string
+          institution_name: string
+          is_active?: boolean
+          last_sync?: string | null
+          mask?: string | null
+          plaid_access_token: string
+          plaid_item_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          account_name?: string
+          account_subtype?: string | null
+          account_type?: string
+          available_balance?: number | null
+          created_at?: string
+          current_balance?: number
+          id?: string
+          institution_name?: string
+          is_active?: boolean
+          last_sync?: string | null
+          mask?: string | null
+          plaid_access_token?: string
+          plaid_item_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       maintenance_records: {
         Row: {
           category: string | null
@@ -299,6 +356,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plaid_transactions: {
+        Row: {
+          account_id: string
+          account_owner: string | null
+          amount: number
+          category: string[] | null
+          created_at: string
+          description: string
+          id: string
+          merchant_name: string | null
+          transaction_date: string
+          transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          account_owner?: string | null
+          amount: number
+          category?: string[] | null
+          created_at?: string
+          description: string
+          id?: string
+          merchant_name?: string | null
+          transaction_date: string
+          transaction_id: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          account_owner?: string | null
+          amount?: number
+          category?: string[] | null
+          created_at?: string
+          description?: string
+          id?: string
+          merchant_name?: string | null
+          transaction_date?: string
+          transaction_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
